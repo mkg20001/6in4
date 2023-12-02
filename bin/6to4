@@ -7,6 +7,18 @@
 #
 #
 
+STATE=/var/lib/6to4
+
+shopt -s nullglob
+
+if [[ "$1" == "restore" ]]; then
+    for f in "$STATE/"*; do
+        6to4 add "$(basename "$f")" "$(cat "$f")"
+    done
+
+    exit 0
+fi
+
 SIPCALC=`which sipcalc`
 if [[ -z $SIPCALC ]]; then
     echo "Missing dependencies:"
@@ -226,6 +238,7 @@ case "$1" in
         echo ""
         echo "If you don't have a static IP, set your local to 0.0.0.0 and invoke update api to update your endpoint"
         echo ""
+        echo "$REMOTE_IP" > "$STATE/$TUNNEL_ID"
     ;;
     
     update)
@@ -246,6 +259,7 @@ case "$1" in
         ip tunnel change $TUNNEL_NAME remote $REMOTE_IP >/dev/null 2>&1
         if [[ $? == 0 ]]; then
             echo "Tunnel $TUNNEL_ID updated to $REMOTE_IP"
+            echo "$REMOTE_IP" > "$STATE/$TUNNEL_ID"
         else
             echo "Failed to update $TUNNEL_ID"
         fi
@@ -256,6 +270,7 @@ case "$1" in
         ip tunnel del $TUNNEL_NAME >/dev/null 2>&1
         if [[ $? == 0 ]]; then
             echo "Tunnel $TUNNEL_ID was deleted successfully"
+            rm "$STATE/$TUNNEL_ID"
         else 
             echo "Failed to delete $TUNNEL_ID"
         fi
